@@ -1,4 +1,4 @@
-from typing import Optional, Tuple, Dict, Any
+from .typing import Optional, Tuple, Dict, Any
 from .agent import Agent
 from .agent_registry import AgentRegistry
 
@@ -92,7 +92,7 @@ class Router:
 
 # Example usage
 if __name__ == "__main__":
-    from agent import SupervisorAgent, WorkerAgent
+    from .agent import SupervisorAgent, WorkerAgent
     
     # Create registry and router
     registry = AgentRegistry()

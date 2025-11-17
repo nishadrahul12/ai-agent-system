@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Callable, List
+from .typing import Dict, Any, Optional, Callable, List
 from .message import Message, MessageType, PriorityLevel
 from .message_broker import MessageBroker
 
