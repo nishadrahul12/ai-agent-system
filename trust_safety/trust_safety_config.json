@@ -1,0 +1,47 @@
+{
+  "trust_safety": {
+    "version": "1.0",
+    "enabled": true
+  },
+  "risk_engine": {
+    "enabled": true,
+    "risk_threshold_warning": 30,
+    "risk_threshold_critical": 70,
+    "risk_threshold_block": 85
+  },
+  "privacy_checker": {
+    "enabled": true,
+    "pii_patterns": [
+      "email",
+      "phone",
+      "ssn",
+      "credit_card",
+      "api_key",
+      "password",
+      "token"
+    ],
+    "keywords_sensitive": ["confidential", "internal", "secret", "classified"]
+  },
+  "security_scanner": {
+    "enabled": true,
+    "threat_patterns": [
+      "sql_injection",
+      "code_injection",
+      "xss",
+      "path_traversal",
+      "command_injection"
+    ]
+  },
+  "supervisor_repair": {
+    "enabled": true,
+    "auto_heal": true,
+    "max_retry_attempts": 3,
+    "repair_strategies": ["prompt_adjustment", "agent_swap", "task_delegation"]
+  },
+  "safety_guardrails": {
+    "enabled": true,
+    "block_dangerous_actions": true,
+    "require_approval_for_critical": true,
+    "audit_log_level": "INFO"
+  }
+}

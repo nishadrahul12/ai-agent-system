@@ -1,0 +1,29 @@
+{
+  "memory_system": {
+    "version": "1.0",
+    "enabled": true
+  },
+  "vector_store": {
+    "type": "simple_json",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "dimension": 384,
+    "similarity_threshold": 0.6,
+    "max_results": 5
+  },
+  "long_term_memory": {
+    "storage_path": "./memory/long_term/",
+    "retention_days": 365,
+    "max_memory_size_mb": 500
+  },
+  "summaries": {
+    "storage_path": "./memory/summaries/",
+    "trigger_length": 2000,
+    "compression_ratio": 0.3
+  },
+  "memory_types": [
+    "task_history",
+    "entity_knowledge",
+    "error_log",
+    "best_practices"
+  ]
+}

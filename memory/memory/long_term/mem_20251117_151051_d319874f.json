@@ -1,0 +1,14 @@
+{
+  "memory_id": "mem_20251117_151051_d319874f",
+  "memory_type": "task_history",
+  "timestamp": "2025-11-17T15:10:51.433455",
+  "content": {
+    "task_name": "Analyze Q3 KPIs",
+    "agent": "worker_telecom",
+    "result": "Analysis complete",
+    "cells_analyzed": [
+      "CELL_A_01",
+      "CELL_A_02"
+    ]
+  }
+}

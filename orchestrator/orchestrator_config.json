@@ -1,0 +1,32 @@
+{
+  "orchestrator": {
+    "version": "1.0",
+    "name": "AI Multi-Agent Orchestrator",
+    "enabled": true
+  },
+  "prompts": {
+    "path": "../prompts/",
+    "auto_load": true
+  },
+  "memory": {
+    "path": "../memory/",
+    "auto_sync": true
+  },
+  "agents": {
+    "max_agents": 10,
+    "timeout_seconds": 30,
+    "retry_attempts": 3
+  },
+  "task_queue": {
+    "max_queue_size": 100,
+    "priority_levels": ["low", "medium", "high", "critical"]
+  },
+  "routing": {
+    "strategy": "capability_based",
+    "fallback_agent": "worker_generic"
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "json"
+  }
+}

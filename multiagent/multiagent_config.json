@@ -1,0 +1,28 @@
+{
+  "multiagent": {
+    "version": "1.0",
+    "enabled": true
+  },
+  "message_broker": {
+    "type": "in_memory",
+    "max_queue_size": 1000,
+    "message_ttl_seconds": 3600
+  },
+  "drift_detection": {
+    "enabled": true,
+    "check_interval_seconds": 60,
+    "deviation_threshold": 0.2,
+    "metrics": ["output_quality", "response_time", "error_rate"]
+  },
+  "reliability_monitoring": {
+    "enabled": true,
+    "check_interval_seconds": 30,
+    "health_check_timeout_seconds": 10,
+    "alert_threshold_error_rate": 0.1
+  },
+  "workflow": {
+    "max_parallel_tasks": 5,
+    "task_timeout_seconds": 300,
+    "retry_attempts": 3
+  }
+}

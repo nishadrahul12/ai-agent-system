@@ -1,0 +1,43 @@
+{
+  "vectors": [
+    {
+      "vector_id": "vec_mem_001",
+      "memory_id": "mem_001",
+      "text": "Analyze telecom KPIs",
+      "embedding": [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5
+      ],
+      "metadata": {}
+    },
+    {
+      "vector_id": "vec_mem_002",
+      "memory_id": "mem_002",
+      "text": "Analyze network metrics",
+      "embedding": [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5
+      ],
+      "metadata": {}
+    },
+    {
+      "vector_id": "vec_mem_003",
+      "memory_id": "mem_003",
+      "text": "Generate report",
+      "embedding": [
+        0.9,
+        0.8,
+        0.7,
+        0.6,
+        0.5
+      ],
+      "metadata": {}
+    }
+  ]
+}
