@@ -1,4 +1,4 @@
-from .typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from .agent import Agent, SupervisorAgent, WorkerAgent, EvaluatorAgent
 
 class AgentRegistry:

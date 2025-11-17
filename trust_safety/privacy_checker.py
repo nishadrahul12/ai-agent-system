@@ -1,6 +1,6 @@
 import re
-from .typing import Dict, List, Any, Tuple
-from .datetime import datetime
+from typing import Dict, List, Any, Tuple
+from datetime import datetime
 
 class PrivacyChecker:
     """

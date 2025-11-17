@@ -1,4 +1,4 @@
-from .typing import Dict, List, Any
+from typing import Dict, List, Any
 from .long_term_memory import LongTermMemory
 import json
 

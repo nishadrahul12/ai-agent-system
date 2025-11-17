@@ -1,7 +1,7 @@
 import re
-from .typing import Dict, List, Any, Tuple
-from .datetime import datetime
-from .enum import Enum
+from typing import Dict, List, Any, Tuple
+from datetime import datetime
+from enum import Enum
 
 class ThreatLevel(Enum):
     """Threat severity levels."""

@@ -1,4 +1,4 @@
-from .typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any
 from .agent import Agent
 from .agent_registry import AgentRegistry
 

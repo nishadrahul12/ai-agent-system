@@ -1,8 +1,8 @@
-from .typing import List, Tuple, Dict, Any, Callable, Optional
+from typing import List, Tuple, Dict, Any, Callable, Optional
 import random
 import string
-from .datetime import datetime
-from .copy import deepcopy
+from datetime import datetime
+from copy import deepcopy
 
 class Individual:
     """Represents a prompt individual in genetic algorithm."""

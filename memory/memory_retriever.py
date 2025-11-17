@@ -1,4 +1,4 @@
-from .typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional
 from .long_term_memory import LongTermMemory
 from .vector_store import SimpleVectorStore
 import json

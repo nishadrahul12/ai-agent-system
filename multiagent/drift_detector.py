@@ -1,6 +1,6 @@
-from .typing import Dict, List, Any, Optional, Tuple
-from .datetime import datetime, timedelta
-from .enum import Enum
+from typing import Dict, List, Any, Optional, Tuple
+from datetime import datetime, timedelta
+from enum import Enum
 import statistics
 
 class DriftAlertLevel(Enum):
