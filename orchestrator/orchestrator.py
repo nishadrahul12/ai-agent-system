@@ -3,11 +3,12 @@ from datetime import datetime
 import json
 import os
 
-from agent import SupervisorAgent, WorkerAgent, EvaluatorAgent
-from agent_registry import AgentRegistry
-from router import Router
-from task_queue import TaskQueue, Task
-from config import config
+from .agent import SupervisorAgent, WorkerAgent, EvaluatorAgent
+from .agent_registry import AgentRegistry
+from .router import Router
+from .task_queue import TaskQueue, Task
+from .config import config
+
 
 class Orchestrator:
     """

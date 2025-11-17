@@ -1,7 +1,7 @@
 from typing import Dict, List, Any, Optional, Callable
 from datetime import datetime
-from prompt_evaluator import PromptEvaluator
-from genetic_algorithm import GeneticAlgorithm
+from .prompt_evaluator import PromptEvaluator
+from .genetic_algorithm import GeneticAlgorithm
 import json
 
 class PromptEvolver:

@@ -1,5 +1,5 @@
-from long_term_memory import LongTermMemory
-from vector_store import SimpleVectorStore
+from .long_term_memory import LongTermMemory
+from .vector_store import SimpleVectorStore
 from memory_retriever import MemoryRetriever
 from memory_summarizer import MemorySummarizer
 from typing import Dict, List, Any, Optional
