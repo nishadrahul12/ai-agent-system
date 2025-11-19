@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.svm import SVR
@@ -324,9 +325,7 @@ class CorrelationAnalyzer:
 def analyze(df: pd.DataFrame, target_col: str, feature_cols: List[str]) -> Dict:
     """
     Public API for correlation analysis
-    Creates fresh analyzer instance for each request (prevents caching)
     """
-    # Create new analyzer instance EVERY TIME to avoid caching
     analyzer = CorrelationAnalyzer()
     
     # Reset state to ensure clean analysis
@@ -335,4 +334,43 @@ def analyze(df: pd.DataFrame, target_col: str, feature_cols: List[str]) -> Dict:
     analyzer.model_results = {}
     analyzer.feature_importance = {}
     
-    return analyzer.analyze_correlations(df, target_col, feature_cols)
+    result = analyzer.analyze_correlations(df, target_col, feature_cols)
+    
+    # ADD THIS CODE BLOCK to the analyze() function:
+    # Calculate correlations for new visualizations
+
+    if result.get('status') == 'success':
+        # 1. CORRELATION MATRIX - shows all feature correlations
+        corr_matrix = df[feature_cols + [target_col]].corr()
+        correlation_matrix_dict = corr_matrix.to_dict()
+        
+        # 2. FEATURE CORRELATIONS WITH TARGET - sorted by strength
+        feature_target_corr = corr_matrix[target_col].drop(target_col).abs().sort_values(ascending=False)
+        feature_correlations_dict = feature_target_corr.to_dict()
+        
+        # 3. ACTUAL vs PREDICTED - get predictions from best model
+        X_all = df[feature_cols].values
+        scaler = StandardScaler()
+        X_scaled_all = scaler.fit_transform(X_all)
+        y_predicted = analyzer.best_model.predict(X_scaled_all)
+        y_actual = df[target_col].values
+        
+        # Add to result
+        result['chart_data'] = {
+            'models': [r['model_name'] for r in result.get('all_models', [])],
+            'scores': [r['r2_score'] for r in result.get('all_models', [])],
+            'features': [f['feature'] for f in result.get('features_ranked', [])],
+            'importance': [f['correlation_score'] for f in result.get('features_ranked', [])],
+            
+            # NEW DATA FOR ENHANCED CHARTS
+            'correlation_matrix': correlation_matrix_dict,
+            'feature_correlations': feature_correlations_dict,
+            'predictions': {
+                'actual': y_actual.tolist(),
+                'predicted': y_predicted.tolist()
+            }
+        }
+    
+    return result
+
+

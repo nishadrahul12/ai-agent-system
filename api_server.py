@@ -4,10 +4,10 @@ Handles file uploads (Excel, CSV), encoding detection, and processing
 Runs locally on http://localhost:8000
 """
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Body
+from fastapi import FastAPI, UploadFile, File, HTTPException, Body, Request
 from correlation_engine import analyze as analyze_correlations
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import pandas as pd
@@ -15,6 +15,7 @@ import numpy as np
 import chardet
 import os
 import json
+from flask import render_template_string
 from pathlib import Path
 from datetime import datetime
 import io
@@ -187,7 +188,407 @@ async def health_check():
             "status": "unhealthy",
             "error": str(e)
         }
+
+# COMPLETE CORRECTED /view-charts FUNCTION FOR api_server.py
+# FIXES F-STRING BRACE CONFLICT
+
+@app.post('/view-charts')
+async def view_charts(request: Request):
+    """
+    Generate and display enhanced charts from correlation analysis
+    """
+    try:
+        data = await request.json()
+        
+        # Extract data safely
+        best_model = data.get('best_model', 'N/A')
+        score_percentage = data.get('score_percentage', 0)
+        target = data.get('target', 'N/A')
+        
+        # Get chart data
+        chart_data = data.get('chart_data', {})
+        models = chart_data.get('models', [])
+        scores = chart_data.get('scores', [])
+        features = chart_data.get('features', [])
+        importance = chart_data.get('importance', [])
+        
+        # NEW DATA
+        correlation_matrix = chart_data.get('correlation_matrix', {})
+        feature_correlations = chart_data.get('feature_correlations', {})
+        predictions = chart_data.get('predictions', {'actual': [], 'predicted': []})
+        
+        # Build model scores array (multiply by 100 for percentage)
+        model_scores = [float(s * 100) if isinstance(s, (int, float)) else 0 for s in scores]
+        importance_scores = [float(i) if isinstance(i, (int, float)) else 0 for i in importance]
+        
+        # Convert data to JSON strings for safe embedding
+        models_json = json.dumps(models)
+        model_scores_json = json.dumps(model_scores)
+        features_json = json.dumps(features)
+        importance_json = json.dumps(importance_scores)
+        correlation_matrix_json = json.dumps(correlation_matrix)
+        feature_corr_json = json.dumps(feature_correlations)
+        predictions_json = json.dumps(predictions)
+        
+        # Get top 5 features for table
+        feature_corr_list = list(feature_correlations.items())[:5]
+        
+        # Build HTML - NO f-string braces conflict here
+        html_header = """<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Analysis Charts</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+            padding: 40px 20px; color: white; min-height: 100vh; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 30px; font-size: 2.5em; color: #00d4ff; }
+        .info { background: rgba(0, 212, 255, 0.1); padding: 25px; border-radius: 8px;
+            margin-bottom: 30px; border-left: 4px solid #00d4ff; }
+        .info-row { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; }
+        .info-item { text-align: center; flex: 1; min-width: 150px; }
+        .info-label { color: #9ca3af; font-size: 0.9em; text-transform: uppercase; }
+        .info-value { color: #00d4ff; font-size: 1.5em; font-weight: bold; margin-top: 5px; }
+        .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 20px; margin-bottom: 30px; }
+        .charts-grid-full { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 30px; }
+        .chart-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px; padding: 20px; backdrop-filter: blur(10px); }
+        .chart-title { color: #00d4ff; margin-bottom: 15px; font-weight: bold; font-size: 1.2em; }
+        canvas { max-height: 400px; width: 100% !important; height: auto !important; }
+        .table-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px; padding: 20px; backdrop-filter: blur(10px); margin-bottom: 30px; }
+        .table-card h3 { color: #00d4ff; margin-bottom: 15px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        th { background: rgba(0, 212, 255, 0.1); color: #00d4ff; font-weight: bold; }
+        tr:hover { background: rgba(0, 212, 255, 0.05); }
+        .correlation-strength { padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .correlation-strong { background: rgba(0, 212, 255, 0.3); color: #00d4ff; }
+        .correlation-moderate { background: rgba(124, 58, 237, 0.3); color: #e879f9; }
+        .correlation-weak { background: rgba(255, 192, 61, 0.3); color: #ffc03d; }
+        .footer { text-align: center; color: #6b7280; margin-top: 40px; padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Advanced Correlation Analysis - Complete Dashboard</h1>
+        
+        <div class="info">
+            <div class="info-row">
+                <div class="info-item">
+                    <div class="info-label">Best Model</div>
+                    <div class="info-value">""" + best_model + """</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">R² Score</div>
+                    <div class="info-value">""" + str(round(score_percentage, 2)) + """%</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Target Variable</div>
+                    <div class="info-value" style="font-size: 1.1em;">""" + target + """</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-title">📈 Model Performance Comparison</div>
+                <canvas id="modelChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">🎯 Feature Importance Ranking</div>
+                <canvas id="featuresChart"></canvas>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-title">🔗 Feature vs Target Correlation</div>
+                <canvas id="correlationBarChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <div class="chart-title">📊 Prediction Accuracy (Actual vs Predicted)</div>
+                <canvas id="predictionScatterChart"></canvas>
+            </div>
+        </div>
+
+        <div class="charts-grid-full">
+            <div class="chart-card">
+                <div class="chart-title">🔥 Full Correlation Matrix Heatmap</div>
+                <canvas id="heatmapChart"></canvas>
+            </div>
+        </div>
+
+        <div class="table-card">
+            <h3>📋 Top 5 Features Contributing to Target Prediction</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Feature</th>
+                        <th>Correlation with Target</th>
+                        <th>Strength</th>
+                    </tr>
+                </thead>
+                <tbody>
+"""
+        
+        # Add table rows
+        table_content = ""
+        for idx, (feature, corr_value) in enumerate(feature_corr_list, 1):
+            abs_corr = abs(corr_value)
+            if abs_corr >= 0.7:
+                strength = "Very Strong"
+                badge_class = "correlation-strong"
+            elif abs_corr >= 0.5:
+                strength = "Strong"
+                badge_class = "correlation-strong"
+            elif abs_corr >= 0.3:
+                strength = "Moderate"
+                badge_class = "correlation-moderate"
+            else:
+                strength = "Weak"
+                badge_class = "correlation-weak"
+            
+            table_content += f"""                    <tr>
+                        <td>#{idx}</td>
+                        <td>{feature}</td>
+                        <td>{round(corr_value, 4)}</td>
+                        <td><span class="correlation-strength {badge_class}">{strength}</span></td>
+                    </tr>
+"""
+        
+        html_footer = """                </tbody>
+            </table>
+        </div>
+        
+        <div class="footer">
+            <p>🚀 AI Multi-Agent System - Phase 6C.3 Advanced Analytics Dashboard</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">Comprehensive correlation analysis with heatmap, feature rankings, and prediction quality metrics</p>
+        </div>
+    </div>
     
+    <script>
+        // Data from analysis
+        const modelLabels = """ + models_json + """;
+        const modelScores = """ + model_scores_json + """;
+        const featureLabels = """ + features_json + """;
+        const featureImportance = """ + importance_json + """;
+        const correlationMatrix = """ + correlation_matrix_json + """;
+        const featureCorrelations = """ + feature_corr_json + """;
+        const predictions = """ + predictions_json + """;
+
+        const colors = {
+            cyan: 'rgba(0, 212, 255, 0.6)',
+            cyanBorder: 'rgba(0, 212, 255, 1)',
+            purple: 'rgba(124, 58, 237, 0.6)',
+            purpleBorder: 'rgba(124, 58, 237, 1)',
+            orange: 'rgba(230, 129, 97, 0.6)',
+            orangeBorder: 'rgba(230, 129, 97, 1)'
+        };
+
+        // Chart 1: Model Performance
+        if (modelLabels && modelLabels.length > 0) {
+            try {
+                new Chart(document.getElementById('modelChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: modelLabels,
+                        datasets: [{
+                            label: 'R² Score (%)',
+                            data: modelScores,
+                            backgroundColor: colors.cyan,
+                            borderColor: colors.cyanBorder,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, max: 100, ticks: { color: 'rgba(255, 255, 255, 0.7)' } },
+                            x: { ticks: { color: 'rgba(255, 255, 255, 0.7)' } }
+                        }
+                    }
+                });
+            } catch(e) { console.error('Model chart error:', e); }
+        }
+
+        // Chart 2: Feature Importance
+        if (featureLabels && featureLabels.length > 0) {
+            try {
+                new Chart(document.getElementById('featuresChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: featureLabels,
+                        datasets: [{
+                            label: 'Importance Score',
+                            data: featureImportance,
+                            backgroundColor: colors.purple,
+                            borderColor: colors.purpleBorder,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { color: 'rgba(255, 255, 255, 0.7)' } },
+                            y: { ticks: { color: 'rgba(255, 255, 255, 0.7)' } }
+                        }
+                    }
+                });
+            } catch(e) { console.error('Features chart error:', e); }
+        }
+
+        // Chart 3: Feature Correlation with Target
+        if (featureCorrelations && Object.keys(featureCorrelations).length > 0) {
+            try {
+                const corrLabels = Object.keys(featureCorrelations);
+                const corrValues = Object.values(featureCorrelations);
+                new Chart(document.getElementById('correlationBarChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: corrLabels,
+                        datasets: [{
+                            label: 'Correlation with Target',
+                            data: corrValues,
+                            backgroundColor: colors.orange,
+                            borderColor: colors.orangeBorder,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { beginAtZero: true, ticks: { color: 'rgba(255, 255, 255, 0.7)' } },
+                            y: { ticks: { color: 'rgba(255, 255, 255, 0.7)' } }
+                        }
+                    }
+                });
+            } catch(e) { console.error('Correlation chart error:', e); }
+        }
+
+        // Chart 4: Prediction Scatter
+        if (predictions && predictions.actual && predictions.predicted) {
+            try {
+                const maxValue = Math.max(...predictions.actual, ...predictions.predicted);
+                new Chart(document.getElementById('predictionScatterChart'), {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Model Predictions',
+                            data: predictions.actual.map((v, i) => ({
+                                x: v,
+                                y: predictions.predicted[i]
+                            })),
+                            backgroundColor: 'rgba(0, 212, 255, 0.6)',
+                            borderColor: 'rgba(0, 212, 255, 1)',
+                            borderWidth: 1,
+                            pointRadius: 4
+                        }, {
+                            label: 'Perfect Prediction (y=x)',
+                            data: [[0, 0], [maxValue, maxValue]],
+                            type: 'line',
+                            borderColor: 'rgba(124, 58, 237, 1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: { legend: { display: true } },
+                        scales: {
+                            x: { title: { display: true, text: 'Actual Values', color: 'rgba(255, 255, 255, 0.7)' },
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' } },
+                            y: { title: { display: true, text: 'Predicted Values', color: 'rgba(255, 255, 255, 0.7)' },
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' } }
+                        }
+                    }
+                });
+            } catch(e) { console.error('Prediction chart error:', e); }
+        }
+
+        // Chart 5: Heatmap (FIXED - no f-string braces)
+        if (correlationMatrix && Object.keys(correlationMatrix).length > 0) {
+            try {
+                const labels = Object.keys(correlationMatrix);
+                const data = [];
+                const bgColors = [];
+                
+                labels.forEach(row => {
+                    labels.forEach(col => {
+                        const value = correlationMatrix[row][col] || 0;
+                        data.push(value);
+                        
+                        const intensity = Math.abs(value);
+                        if (value > 0) {
+                            bgColors.push('rgba(0, 212, 255, ' + value + ')');
+                        } else {
+                            bgColors.push('rgba(255, 84, 89, ' + Math.abs(value) + ')');
+                        }
+                    });
+                });
+
+                new Chart(document.getElementById('heatmapChart'), {
+                    type: 'bubble',
+                    data: {
+                        datasets: [{
+                            label: 'Correlation Strength',
+                            data: labels.map((row, i) => 
+                                labels.map((col, j) => ({
+                                    x: j,
+                                    y: i,
+                                    r: Math.abs(correlationMatrix[row][col] || 0) * 15
+                                }))
+                            ).flat(),
+                            backgroundColor: bgColors
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { type: 'linear', min: -0.5, max: labels.length - 0.5,
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' } },
+                            y: { type: 'linear', min: -0.5, max: labels.length - 0.5,
+                                ticks: { color: 'rgba(255, 255, 255, 0.7)' } }
+                        }
+                    }
+                });
+            } catch(e) { console.error('Heatmap chart error:', e); }
+        }
+    </script>
+</body>
+</html>
+"""
+        
+        html_content = html_header + table_content + html_footer
+        return HTMLResponse(content=html_content)
+    
+    except Exception as e:
+        log.error(f"Error generating charts: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"error": str(e), "status": "error"}
+
 # ============================================================================
 # COLUMN TYPE MANAGEMENT
 # ============================================================================

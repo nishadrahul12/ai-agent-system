@@ -537,6 +537,11 @@ function displayCorrelationResults(analysis) {
         document.getElementById('emptyState').style.display = 'none';
         document.getElementById('resultsSection').style.display = 'block';
 
+        // Show "View Charts" button after results display
+        setTimeout(() => {
+            addViewChartsButton(analysis);
+        }, 500);
+
         // Summary
         // Create outlier warning if outliers detected
         const outlierWarning = analysis.outlier_detection?.warning_message 
@@ -613,6 +618,89 @@ function displayCorrelationResults(analysis) {
         showMessage('Error displaying results: ' + error.message, 'error');
     }
 }
+        // Show "View Charts" button
+        addViewChartsButton(response);
+
+        // Function to handle "View Charts" button click
+function viewChartsPopup(analysisResults) {
+    // Send analysis results to backend to generate and display charts
+    fetch('http://localhost:8000/charts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(analysisResults)
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Failed to load charts');
+        return response.text();
+    })
+    .then(html => {
+        // Open charts in new tab
+        const newWindow = window.open();
+        newWindow.document.write(html);
+        newWindow.document.close();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to load charts. Check console for details.');
+    });
+}
+
+// Update your runCorrelationAnalysis function to include "View Charts" button
+// Add this to the results display section (after the outlier detection box):
+
+function addViewChartsButton(analysisResults) {
+    const resultsContainer = document.querySelector('.analysis-results') || 
+                           document.querySelector('[data-section="analysis-results"]');
+    
+    if (resultsContainer) {
+        const chartButtonContainer = document.createElement('div');
+        chartButtonContainer.style.cssText = `
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+        `;
+        
+        const chartButton = document.createElement('button');
+        chartButton.textContent = '📊 View Charts';
+        chartButton.style.cssText = `
+            background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1em;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        `;
+        
+        chartButton.onmouseover = () => {
+            chartButton.style.transform = 'translateY(-2px)';
+            chartButton.style.boxShadow = '0 10px 20px rgba(0, 212, 255, 0.3)';
+        };
+        
+        chartButton.onmouseout = () => {
+            chartButton.style.transform = 'translateY(0)';
+            chartButton.style.boxShadow = 'none';
+        };
+        
+        chartButton.addEventListener('click', () => {
+            viewChartsPopup(analysisResults);
+        });
+        
+        chartButtonContainer.appendChild(chartButton);
+        resultsContainer.appendChild(chartButtonContainer);
+    }
+}
+
+// Call this after correlation analysis completes:
+// addViewChartsButton(analysisResults);
+
 
 // ============================================================================
 // START ANALYSIS
@@ -1016,6 +1104,96 @@ function populatePredictionColumns(columns) {
 async function runPrediction() {
     alert('🔮 Time-Series Prediction coming in Phase 6C!\n\nThis will forecast future values based on historical trends.');
 }
+
+// ============================================================================
+// VIEW CHARTS - Display visualization of correlation analysis
+// ============================================================================
+
+function addViewChartsButton(analysisData) {
+    // Check if button already exists
+    if (document.getElementById('viewChartsBtn')) {
+        return;
+    }
+    
+    const resultsSection = document.getElementById('resultsSection');
+    
+    if (resultsSection) {
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = `
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            border-radius: 8px;
+        `;
+        
+        const btn = document.createElement('button');
+        btn.id = 'viewChartsBtn';
+        btn.textContent = '📊 View Charts';
+        btn.style.cssText = `
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+        `;
+        
+        btn.onmouseover = function() {
+            this.style.transform = 'translateY(-3px)';
+            this.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.4)';
+        };
+        
+        btn.onmouseout = function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '0 4px 15px rgba(37, 99, 235, 0.3)';
+        };
+        
+        btn.onclick = function() {
+            viewChartsPopup(analysisData);
+        };
+        
+        btnContainer.appendChild(btn);
+        resultsSection.appendChild(btnContainer);
+    }
+}
+
+function viewChartsPopup(analysisResults) {
+    try {
+        // Send analysis results to backend to generate and display charts
+        fetch('http://localhost:8000/view-charts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(analysisResults)
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Failed to load charts');
+            return response.text();
+        })
+        .then(html => {
+            // Open charts in new tab
+            const newWindow = window.open();
+            newWindow.document.write(html);
+            newWindow.document.close();
+            showMessage('📊 Charts opened in new tab!', 'success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Failed to load charts. Check console for details.', 'error');
+        });
+    } catch (error) {
+        console.error('Chart popup error:', error);
+        showMessage('Error opening charts: ' + error.message, 'error');
+    }
+}
+
 
 // ============================================================================
 // PLACEHOLDER - Task Type Selection
