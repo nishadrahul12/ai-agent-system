@@ -19,8 +19,66 @@ import logging
 
 log = logging.getLogger(__name__)
 
-
 warnings.filterwarnings('ignore')
+
+
+def detect_outliers(df: pd.DataFrame, columns: List[str]) -> Dict:
+    """
+    Detect outliers in specified columns using IQR method
+    Returns warning severity: 'high', 'medium', 'low', 'none'
+    """
+    outliers_found = {}
+    affected_columns = []
+    
+    for col in columns:
+        if col not in df.columns or not pd.api.types.is_numeric_dtype(df[col]):
+            continue
+            
+        Q1 = df[col].quantile(0.25)
+        Q3 = df[col].quantile(0.75)
+        IQR = Q3 - Q1
+        
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+        
+        outlier_mask = (df[col] < lower_bound) | (df[col] > upper_bound)
+        outlier_count = outlier_mask.sum()
+        outlier_percentage = (outlier_count / len(df)) * 100
+        
+        if outlier_percentage > 0:
+            affected_columns.append(col)
+            outliers_found[col] = {
+                'count': int(outlier_count),
+                'percentage': round(outlier_percentage, 2),
+                'lower_bound': float(lower_bound),
+                'upper_bound': float(upper_bound)
+            }
+    
+    # Determine severity
+    if not affected_columns:
+        severity = 'none'
+        warning_message = '✅ No outliers detected - Data is clean'
+    else:
+        avg_outlier_percentage = np.mean([v['percentage'] for v in outliers_found.values()])
+        
+        if avg_outlier_percentage > 10:
+            severity = 'high'
+            warning_message = f'⚠️ HIGH: {len(affected_columns)} columns have >10% outliers'
+        elif avg_outlier_percentage > 5:
+            severity = 'medium'
+            warning_message = f'⚡ MEDIUM: {len(affected_columns)} columns have 5-10% outliers'
+        else:
+            severity = 'low'
+            warning_message = f'ℹ️ LOW: {len(affected_columns)} columns have <5% outliers'
+    
+    return {
+        'warning_message': warning_message,
+        'severity': severity,
+        'outlier_columns': affected_columns,
+        'outlier_percentages': outliers_found,
+        'total_affected_columns': len(affected_columns)
+    }
+
 
 class CorrelationAnalyzer:
     """
@@ -33,159 +91,157 @@ class CorrelationAnalyzer:
         self.best_score = -1
         self.model_results = {}
         self.feature_importance = {}
+    
+    def train_linear_regression(self, X: np.ndarray, y: np.ndarray) -> Dict:
+        """Train linear regression and return results"""
+        model = LinearRegression()
+        model.fit(X, y)
+        y_pred = model.predict(X)
+        r2 = r2_score(y, y_pred)
         
-    def prepare_data(self, df: pd.DataFrame, target_col: str, feature_cols: List[str]) -> Tuple:
-        """
-        Prepare and validate data
-        """
-        try:
-            # Extract target and features
-            X = df[feature_cols].copy()
-            y = df[target_col].copy()
-            
-            # Remove NaN values
-            valid_idx = ~(X.isna().any(axis=1) | y.isna())
-            X = X[valid_idx]
-            y = y[valid_idx]
-            
-            # Convert to numeric
-            X = X.apply(pd.to_numeric, errors='coerce')
-            y = pd.to_numeric(y, errors='coerce')
-            
-            # Remove remaining NaN
-            valid_idx = ~(X.isna().any(axis=1) | y.isna())
-            X = X[valid_idx]
-            y = y[valid_idx]
-            
-            if len(X) < 10:
-                raise ValueError(f"Not enough valid data points. Need at least 10, got {len(X)}")
-            
-            # Standardize features
-            scaler = StandardScaler()
-            X_scaled = scaler.fit_transform(X)
-            X_scaled = pd.DataFrame(X_scaled, columns=feature_cols)
-            
-            return X_scaled, y, X, scaler
+        self.feature_importance = dict(zip(range(len(model.coef_)), np.abs(model.coef_)))
         
-        except Exception as e:
-            raise Exception(f"Data preparation error: {str(e)}")
+        return {
+            'model_name': 'Linear Regression',
+            'model': model,
+            'r2_score': r2,
+            'importance': self.feature_importance
+        }
     
-    def train_linear_regression(self, X, y) -> Dict:
-        """Train Linear Regression model"""
-        try:
-            model = LinearRegression()
-            model.fit(X, y)
-            score = cross_val_score(model, X, y, cv=5, scoring='r2').mean()
-            
-            return {
-                'model_name': 'Linear Regression',
-                'r2_score': score,
-                'model': model,
-                'importance': dict(zip(X.columns, np.abs(model.coef_)))
-            }
-        except Exception as e:
-            return {'model_name': 'Linear Regression', 'r2_score': -1, 'error': str(e)}
+    def train_ridge_regression(self, X: np.ndarray, y: np.ndarray) -> Dict:
+        """Train ridge regression and return results"""
+        model = Ridge(alpha=1.0)
+        model.fit(X, y)
+        y_pred = model.predict(X)
+        r2 = r2_score(y, y_pred)
+        
+        self.feature_importance = dict(zip(range(len(model.coef_)), np.abs(model.coef_)))
+        
+        return {
+            'model_name': 'Ridge Regression',
+            'model': model,
+            'r2_score': r2,
+            'importance': self.feature_importance
+        }
     
-    def train_ridge_regression(self, X, y) -> Dict:
-        """Train Ridge Regression model"""
-        try:
-            model = Ridge(alpha=1.0)
-            model.fit(X, y)
-            score = cross_val_score(model, X, y, cv=5, scoring='r2').mean()
-            
-            return {
-                'model_name': 'Ridge Regression',
-                'r2_score': score,
-                'model': model,
-                'importance': dict(zip(X.columns, np.abs(model.coef_)))
-            }
-        except Exception as e:
-            return {'model_name': 'Ridge Regression', 'r2_score': -1, 'error': str(e)}
+    def train_lasso_regression(self, X: np.ndarray, y: np.ndarray) -> Dict:
+        """Train lasso regression and return results"""
+        model = Lasso(alpha=0.1)
+        model.fit(X, y)
+        y_pred = model.predict(X)
+        r2 = r2_score(y, y_pred)
+        
+        self.feature_importance = dict(zip(range(len(model.coef_)), np.abs(model.coef_)))
+        
+        return {
+            'model_name': 'Lasso Regression',
+            'model': model,
+            'r2_score': r2,
+            'importance': self.feature_importance
+        }
     
-    def train_lasso_regression(self, X, y) -> Dict:
-        """Train Lasso Regression model"""
-        try:
-            model = Lasso(alpha=0.1, max_iter=1000)
-            model.fit(X, y)
-            score = cross_val_score(model, X, y, cv=5, scoring='r2').mean()
-            
-            return {
-                'model_name': 'Lasso Regression',
-                'r2_score': score,
-                'model': model,
-                'importance': dict(zip(X.columns, np.abs(model.coef_)))
-            }
-        except Exception as e:
-            return {'model_name': 'Lasso Regression', 'r2_score': -1, 'error': str(e)}
+    def train_random_forest(self, X: np.ndarray, y: np.ndarray) -> Dict:
+        """Train random forest and return results"""
+        model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
+        model.fit(X, y)
+        y_pred = model.predict(X)
+        r2 = r2_score(y, y_pred)
+        
+        self.feature_importance = dict(zip(range(len(model.feature_importances_)), 
+                                          model.feature_importances_))
+        
+        return {
+            'model_name': 'Random Forest',
+            'model': model,
+            'r2_score': r2,
+            'importance': self.feature_importance
+        }
     
-    def train_random_forest(self, X, y) -> Dict:
-        """Train Random Forest model"""
-        try:
-            model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-            model.fit(X, y)
-            score = cross_val_score(model, X, y, cv=5, scoring='r2').mean()
-            
-            return {
-                'model_name': 'Random Forest',
-                'r2_score': score,
-                'model': model,
-                'importance': dict(zip(X.columns, model.feature_importances_))
-            }
-        except Exception as e:
-            return {'model_name': 'Random Forest', 'r2_score': -1, 'error': str(e)}
+    def train_gradient_boosting(self, X: np.ndarray, y: np.ndarray) -> Dict:
+        """Train gradient boosting and return results"""
+        model = GradientBoostingRegressor(n_estimators=100, random_state=42)
+        model.fit(X, y)
+        y_pred = model.predict(X)
+        r2 = r2_score(y, y_pred)
+        
+        self.feature_importance = dict(zip(range(len(model.feature_importances_)), 
+                                          model.feature_importances_))
+        
+        return {
+            'model_name': 'Gradient Boosting',
+            'model': model,
+            'r2_score': r2,
+            'importance': self.feature_importance
+        }
     
-    def train_gradient_boosting(self, X, y) -> Dict:
-        """Train Gradient Boosting model"""
-        try:
-            model = GradientBoostingRegressor(n_estimators=100, random_state=42)
-            model.fit(X, y)
-            score = cross_val_score(model, X, y, cv=5, scoring='r2').mean()
-            
-            return {
-                'model_name': 'Gradient Boosting',
-                'r2_score': score,
-                'model': model,
-                'importance': dict(zip(X.columns, model.feature_importances_))
-            }
-        except Exception as e:
-            return {'model_name': 'Gradient Boosting', 'r2_score': -1, 'error': str(e)}
+    def train_xgboost(self, X: np.ndarray, y: np.ndarray) -> Dict:
+        """Train XGBoost and return results"""
+        model = xgb.XGBRegressor(n_estimators=100, random_state=42, verbosity=0)
+        model.fit(X, y)
+        y_pred = model.predict(X)
+        r2 = r2_score(y, y_pred)
+        
+        self.feature_importance = dict(zip(range(len(model.feature_importances_)), 
+                                          model.feature_importances_))
+        
+        return {
+            'model_name': 'XGBoost',
+            'model': model,
+            'r2_score': r2,
+            'importance': self.feature_importance
+        }
     
-    def train_xgboost(self, X, y) -> Dict:
-        """Train XGBoost model"""
-        try:
-            model = xgb.XGBRegressor(n_estimators=100, random_state=42, n_jobs=-1)
-            model.fit(X, y)
-            score = cross_val_score(model, X, y, cv=5, scoring='r2').mean()
-            
-            return {
-                'model_name': 'XGBoost',
-                'r2_score': score,
-                'model': model,
-                'importance': dict(zip(X.columns, model.feature_importances_))
-            }
-        except Exception as e:
-            return {'model_name': 'XGBoost', 'r2_score': -1, 'error': str(e)}
+    def train_svr(self, X: np.ndarray, y: np.ndarray) -> Dict:
+        """Train SVR and return results"""
+        model = SVR(kernel='rbf', C=100, epsilon=0.1)
+        model.fit(X, y)
+        y_pred = model.predict(X)
+        r2 = r2_score(y, y_pred)
+        
+        self.feature_importance = {}
+        
+        return {
+            'model_name': 'Support Vector Regression',
+            'model': model,
+            'r2_score': r2,
+            'importance': self.feature_importance
+        }
     
-    def train_svr(self, X, y) -> Dict:
-        """Train Support Vector Regression model"""
-        try:
-            model = SVR(kernel='rbf', C=100, epsilon=0.1)
-            model.fit(X, y)
-            score = cross_val_score(model, X, y, cv=5, scoring='r2').mean()
-            
-            return {
-                'model_name': 'Support Vector Regression',
-                'r2_score': score,
-                'model': model,
-                'importance': dict(zip(X.columns, [0] * len(X.columns)))  # SVR doesn't have feature importance
-            }
-        except Exception as e:
-            return {'model_name': 'Support Vector Regression', 'r2_score': -1, 'error': str(e)}
+    def prepare_data(self, df: pd.DataFrame, target_col: str, 
+                    feature_cols: List[str]) -> Tuple[np.ndarray, np.ndarray, 
+                                                       np.ndarray, StandardScaler]:
+        """Prepare data for model training"""
+        X = df[feature_cols].values
+        y = df[target_col].values
+        
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X)
+        
+        return X_scaled, y, X, scaler
     
-    def analyze_correlations(self, df: pd.DataFrame, target_col: str, feature_cols: List[str]) -> Dict:
+    def _generate_explanations(self, feature_cols: List[str], 
+                              sorted_features: List[Tuple]) -> Dict[str, str]:
         """
-        Analyze correlations using multiple models
-        Returns best model and feature importance
+        Generate simple explanations for feature correlations
+        """
+        explanations = {}
+        
+        for i, (feature, score) in enumerate(sorted_features):
+            if i == 0:
+                explanations[feature] = "Strongest relationship with target - primary driver"
+            elif i < len(sorted_features) // 2:
+                explanations[feature] = "Strong correlation - significant impact detected"
+            elif i < len(sorted_features) * 0.75:
+                explanations[feature] = "Moderate relationship - noticeable influence"
+            else:
+                explanations[feature] = "Weak correlation - minor influence on target"
+        
+        return explanations
+    
+    def analyze_correlations(self, df: pd.DataFrame, target_col: str, 
+                            feature_cols: List[str]) -> Dict:
+        """
+        Main function to analyze correlations
         """
         try:
             # Prepare data
@@ -205,7 +261,7 @@ class CorrelationAnalyzer:
             results = []
             for train_func in models_to_train:
                 result = train_func(X, y)
-                if 'r2_score' in result and result['r2_score'] > -1:
+                if result['r2_score'] > -1:
                     results.append(result)
                     self.model_results[result['model_name']] = result
             
@@ -224,6 +280,9 @@ class CorrelationAnalyzer:
             
             # Generate explanations
             explanations = self._generate_explanations(feature_cols, sorted_features)
+            
+            # Add outlier detection
+            outlier_info = detect_outliers(df, feature_cols + [target_col])
             
             return {
                 'status': 'success',
@@ -247,102 +306,33 @@ class CorrelationAnalyzer:
                         'score_percentage': float(res['r2_score'] * 100)
                     }
                     for res in results
-                ]
+                ],
+                'outlier_detection': {
+                    'warning_message': outlier_info['warning_message'],
+                    'severity': outlier_info['severity'],
+                    'affected_columns': outlier_info['outlier_columns'],
+                    'outlier_details': outlier_info['outlier_percentages'],
+                    'total_affected': outlier_info['total_affected_columns']
+                }
             }
         except Exception as e:
             log.error(f"Error in correlation analysis: {e}")
             return {'status': 'error', 'message': str(e)}
 
-    
-    def _generate_explanations(self, feature_cols: List[str], sorted_features: List[Tuple]) -> Dict:
-        """
-        Generate simple explanations for correlations
-        """
-        explanations = {}
-        
-        for i, (feature, score) in enumerate(sorted_features):
-            if i == 0:
-                explanations[feature] = "Strongest relationship with target - primary driver"
-            elif i < len(sorted_features) // 2:
-                explanations[feature] = "Strong correlation - significant impact detected"
-            elif i < len(sorted_features) * 0.75:
-                explanations[feature] = "Moderate relationship - noticeable influence"
-            else:
-                explanations[feature] = "Weak correlation - minor influence on target"
-        
-        return explanations
 
-
+# Module-level function for external use
 def analyze(df: pd.DataFrame, target_col: str, feature_cols: List[str]) -> Dict:
     """
-    Main function to analyze correlations
+    Public API for correlation analysis
+    Creates fresh analyzer instance for each request (prevents caching)
     """
+    # Create new analyzer instance EVERY TIME to avoid caching
     analyzer = CorrelationAnalyzer()
-    return analyzer.analyze_correlations(df, target_col, feature_cols)
-
-import numpy as np
-from scipy import stats
-
-def detect_outliers(df, columns, method='iqr'):
-    """
-    Detect outliers in dataset
-    Returns: outlier statistics and warnings
-    """
-    try:
-        outlier_stats = {
-            'has_outliers': False,
-            'outlier_columns': [],
-            'outlier_percentages': {},
-            'severity': 'none',  # none, low, medium, high
-            'warning_message': ''
-        }
-        
-        total_outliers = 0
-        total_points = 0
-        
-        for col in columns:
-            if df[col].dtype in ['float64', 'int64']:
-                data = df[col].dropna()
-                
-                if method == 'iqr':
-                    Q1 = data.quantile(0.25)
-                    Q3 = data.quantile(0.75)
-                    IQR = Q3 - Q1
-                    lower_bound = Q1 - 1.5 * IQR
-                    upper_bound = Q3 + 1.5 * IQR
-                    outlier_mask = (data < lower_bound) | (data > upper_bound)
-                
-                outlier_count = outlier_mask.sum()
-                outlier_percentage = (outlier_count / len(data)) * 100
-                total_outliers += outlier_count
-                total_points += len(data)
-                
-                if outlier_count > 0:
-                    outlier_stats['has_outliers'] = True
-                    outlier_stats['outlier_columns'].append(col)
-                    outlier_stats['outlier_percentages'][col] = round(outlier_percentage, 2)
-        
-        # Calculate overall severity
-        if total_points > 0:
-            overall_outlier_pct = (total_outliers / total_points) * 100
-            
-            if overall_outlier_pct > 20:
-                outlier_stats['severity'] = 'high'
-                outlier_stats['warning_message'] = f"⚠️ HIGH: Data contains {overall_outlier_pct:.1f}% outliers. This may significantly impact model accuracy. Consider data cleaning or robust regression methods."
-            
-            elif overall_outlier_pct > 10:
-                outlier_stats['severity'] = 'medium'
-                outlier_stats['warning_message'] = f"⚠️ MEDIUM: Data contains {overall_outlier_pct:.1f}% outliers. Models may be affected. Review the data distribution."
-            
-            elif overall_outlier_pct > 5:
-                outlier_stats['severity'] = 'low'
-                outlier_stats['warning_message'] = f"ℹ️ LOW: Data contains {overall_outlier_pct:.1f}% outliers. Normal for most datasets."
-            
-            else:
-                outlier_stats['warning_message'] = "✅ Data quality is good. Very few outliers detected."
-        
-        return outlier_stats
     
-    except Exception as e:
-        log.error(f"Error detecting outliers: {e}")
-        return {'has_outliers': False, 'error': str(e)}
+    # Reset state to ensure clean analysis
+    analyzer.best_model = None
+    analyzer.best_score = -1
+    analyzer.model_results = {}
+    analyzer.feature_importance = {}
+    
+    return analyzer.analyze_correlations(df, target_col, feature_cols)
