@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Multi-Agent System - Intelligent Data Analysis</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                🤖 AI Multi-Agent System
+            </div>
+            <div class="nav-info">
+                <span id="api-status" class="status-indicator">● Connecting...</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Intelligent Data Analysis Platform</h1>
+            <p>Upload data and choose your analysis type</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('analysis')" data-tab="analysis">
+                📊 Task Analysis
+            </button>
+            <button class="tab-btn" onclick="switchTab('correlation')" data-tab="correlation">
+                📈 Correlation Analysis
+            </button>
+            <button class="tab-btn" onclick="switchTab('prediction')" data-tab="prediction">
+                🔮 Time-Series Prediction
+            </button>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Left Panel: Configuration -->
+            <div class="panel left-panel">
+                <!-- COMMON SECTIONS (All Tabs) -->
+                
+                <!-- Step 1: File Upload -->
+                <div class="section">
+                    <h3>Step 1: Upload File</h3>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <div class="upload-icon">📁</div>
+                        <p><strong>Click to upload</strong> or drag and drop</p>
+                        <p class="upload-hint">Excel (.xlsx, .xls) or CSV (.csv) files up to 5GB</p>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                    </div>
+                    <div id="fileInfo" class="file-info" style="display: none;">
+                        <p><strong>File:</strong> <span id="fileName"></span></p>
+                        <p><strong>Size:</strong> <span id="fileSize"></span></p>
+                        <p><strong>Encoding:</strong> <span id="fileEncoding"></span></p>
+                    </div>
+                </div>
+
+                <!-- Step 2: Column Mapping -->
+                <div class="section" id="columnMappingSection" style="display: none;">
+                    <h3>Step 2: Verify Column Mapping</h3>
+                    <p class="hint">System auto-detected columns. Confirm or adjust:</p>
+                    <div id="columnMappingContainer"></div>
+                    
+                    <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                        <button class="btn btn-secondary" onclick="resetColumnMapping()" style="margin-right: 0.5rem;">
+                            ↻ Reset
+                        </button>
+                        <button class="btn btn-secondary" onclick="saveColumnMappings()">
+                            💾 Save for Future
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TAB-SPECIFIC SECTIONS -->
+
+                <!-- TASK ANALYSIS Tab -->
+                <div id="tab-analysis-config" class="tab-config">
+                    <div class="section">
+                        <h3>Step 3: Select Task Type</h3>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label for="predefinedTasks" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                Choose Analysis Type:
+                            </label>
+                            <select id="predefinedTasks" onchange="selectTaskType()" 
+                                    style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; cursor: pointer;">
+                                <option value="">-- Select a task type --</option>
+                                <option value="network_analysis">🌐 Network Analysis</option>
+                                <option value="feedback_analysis">💬 Customer Feedback</option>
+                                <option value="risk_assessment">⚠️ Risk Assessment</option>
+                                <option value="data_aggregation">📊 Data Aggregation</option>
+                                <option value="performance_optimization">⚡ Performance Optimization</option>
+                                <option value="anomaly_detection">🚨 Anomaly Detection</option>
+                                <option value="predictive_analysis">🔮 Predictive Analysis</option>
+                                <option value="custom">✏️ Custom Task</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Task Input -->
+                        <div id="customTaskDiv" style="display: none; margin-top: 1rem;">
+                            <input type="text" id="customTaskInput" placeholder="Describe your custom analysis task..." 
+                                   style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem;">
+                            <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">
+                                Example: "Analyze customer churn patterns and predict who might leave"
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="section action-buttons">
+                        <button id="analyzeBtn" class="btn btn-primary" onclick="startAnalysis()" disabled>
+                            ▶️ Start Analysis
+                        </button>
+                        <button id="clearBtn" class="btn btn-secondary" onclick="clearAll()">
+                            🔄 Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CORRELATION Tab -->
+                <div id="tab-correlation-config" class="tab-config">
+                    <div class="section">
+                        <h3>Step 3: Select Columns</h3>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                Target Column (What to predict?):
+                            </label>
+                            <select id="targetColumn" 
+                                    style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem; cursor: pointer;">
+                                <option value="">-- Select target column --</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                Source Columns (What influences target?):
+                            </label>
+                            <div id="sourceColumnsContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; background: rgba(51, 65, 85, 0.3);">
+                                <!-- Checkboxes will be added here -->
+                            </div>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">
+                                Select at least 2 columns
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="section action-buttons">
+                        <button class="btn btn-primary" onclick="runCorrelationAnalysis()" disabled id="correlationBtn">
+                            🔍 Analyze Correlations
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearAll()">
+                            🔄 Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PREDICTION Tab -->
+                <div id="tab-prediction-config" class="tab-config">
+                    <div class="section">
+                        <h3>Step 3: Configure Prediction</h3>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                Target Column (What to predict?):
+                            </label>
+                            <select id="predictionTarget" 
+                                    style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem; cursor: pointer;">
+                                <option value="">-- Select target column --</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                Feature Columns (Predictors):
+                            </label>
+                            <div id="predictionFeaturesContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; background: rgba(51, 65, 85, 0.3);">
+                                <!-- Checkboxes will be added here -->
+                            </div>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">
+                                Select at least 2 features
+                            </small>
+                        </div>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                Forecast Periods:
+                            </label>
+                            <input type="number" id="forecastPeriods" value="7" min="1" max="90"
+                                   style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem;">
+                            <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">
+                                Number of periods to forecast (days/hours)
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="section action-buttons">
+                        <button class="btn btn-primary" onclick="runPrediction()" disabled id="predictionBtn">
+                            🔮 Generate Forecast
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearAll()">
+                            🔄 Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Results -->
+            <div class="panel right-panel">
+                <div class="panel-header">
+                    <h2 id="resultsTitle">📊 Analysis Results</h2>
+                </div>
+
+                <!-- Status Section -->
+                <div id="statusSection" class="section" style="display: none;">
+                    <h3>Processing Status</h3>
+                    <div class="status-box">
+                        <div class="spinner"></div>
+                        <p id="statusMessage">Processing your data...</p>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="section" style="display: none;">
+                    <div id="resultsSummary" class="results-card"></div>
+                    <div id="resultsFindings" class="results-card"></div>
+                    <div id="resultsRisks" class="results-card"></div>
+                    <div id="resultsRecommendations" class="results-card"></div>
+
+                    <!-- Download Options -->
+                    <div class="download-section">
+                        <h4>Download Results</h4>
+                        <div class="download-buttons">
+                            <button class="btn btn-download" onclick="downloadResults('json')">
+                                📄 JSON
+                            </button>
+                            <button class="btn btn-download" onclick="downloadResults('excel')">
+                                📊 Excel
+                            </button>
+                            <button class="btn btn-download" onclick="downloadResults('csv')">
+                                📋 CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="section empty-state">
+                    <div class="empty-icon">📭</div>
+                    <p>No results yet. Upload a file and configure your analysis!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>AI Multi-Agent System | Intelligent Data Analysis Platform</p>
+            <p>Running locally on http://localhost:8000</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

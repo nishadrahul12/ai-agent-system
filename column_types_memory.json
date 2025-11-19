@@ -1,0 +1,29 @@
+{
+  "common_column_types": {
+    "Standard": [
+      {"value": "location", "label": "📍 Location", "icon": "📍"},
+      {"value": "speed", "label": "⚡ Speed/Throughput", "icon": "⚡"},
+      {"value": "latency", "label": "⏱️ Latency/Delay", "icon": "⏱️"},
+      {"value": "error_rate", "label": "❌ Error Rate", "icon": "❌"},
+      {"value": "customer_id", "label": "👤 Customer ID", "icon": "👤"},
+      {"value": "message", "label": "💬 Message/Text", "icon": "💬"},
+      {"value": "sentiment", "label": "😊 Sentiment", "icon": "😊"},
+      {"value": "date_time", "label": "📅 Date/Time", "icon": "📅"},
+      {"value": "percentage", "label": "📊 Percentage", "icon": "📊"},
+      {"value": "count", "label": "🔢 Count", "icon": "🔢"}
+    ],
+    "Telecom": [
+      {"value": "pdcp_throughput", "label": "📡 PDCP Throughput (DL/UL)", "icon": "📡"},
+      {"value": "sinr_level", "label": "📶 SINR Level", "icon": "📶"},
+      {"value": "cqi_index", "label": "📊 CQI Index", "icon": "📊"},
+      {"value": "rrc_connected_ue", "label": "👥 RRC Connected Users", "icon": "👥"},
+      {"value": "prb_utilization", "label": "🔌 PRB Utilization", "icon": "🔌"},
+      {"value": "rach_setup", "label": "📞 RACH Setup Attempts", "icon": "📞"},
+      {"value": "carrier_id", "label": "📍 Carrier ID/Band", "icon": "📍"},
+      {"value": "signal_strength", "label": "📶 Signal Strength (RSRP)", "icon": "📶"},
+      {"value": "connection_rate", "label": "✅ Connection Success Rate", "icon": "✅"},
+      {"value": "dl_volume", "label": "📥 DL Volume", "icon": "📥"}
+    ],
+    "user_saved": {}
+  }
+}

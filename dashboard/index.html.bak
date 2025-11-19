@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Multi-Agent System - Data Analysis Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                🤖 AI Multi-Agent System
+            </div>
+            <div class="nav-info">
+                <span id="api-status" class="status-indicator">● Connecting...</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Intelligent Data Analysis Dashboard</h1>
+            <p>Upload your data (Excel, CSV) and let AI agents analyze it automatically</p>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="content-grid">
+            <!-- Left Panel: Upload & Configure -->
+            <div class="panel left-panel">
+                <div class="panel-header">
+                    <h2>📤 Upload & Configure</h2>
+                </div>
+
+                <!-- File Upload Section -->
+                <div class="section">
+                    <h3>Step 1: Upload File</h3>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <div class="upload-icon">📁</div>
+                        <p><strong>Click to upload</strong> or drag and drop</p>
+                        <p class="upload-hint">Excel (.xlsx, .xls) or CSV (.csv) files up to 5GB</p>
+                        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                    </div>
+                    <div id="fileInfo" class="file-info" style="display: none;">
+                        <p><strong>File:</strong> <span id="fileName"></span></p>
+                        <p><strong>Size:</strong> <span id="fileSize"></span></p>
+                        <p><strong>Encoding:</strong> <span id="fileEncoding"></span></p>
+                    </div>
+                </div>
+
+                <!-- Column Mapping Section -->
+                <div class="section" id="columnMappingSection" style="display: none;">
+                    <h3>Step 2: Verify Column Mapping</h3>
+                     <p class="hint">System auto-detected columns. Confirm or adjust:</p>
+                    <div id="columnMappingContainer"></div>
+    
+                    <div style="margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                        <button class="btn btn-secondary" onclick="resetColumnMapping()" style="margin-right: 0.5rem;">
+                            ↻ Reset to Auto-Detect
+                        </button>
+                        <button class="btn btn-secondary" onclick="saveColumnMappings()">
+                            💾 Save Mapping for Future
+                        </button>
+                </div>
+            </div>
+
+                <!-- Task Type Selection -->
+                <div class="section">
+                    <h3>Step 3: Select Task Type</h3>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <label for="predefinedTasks" style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                            Choose Predefined:
+                        </label>
+                        <select id="predefinedTasks" onchange="selectPredefinedTask()" 
+                                style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 1rem; cursor: pointer;">
+                            <option value="">-- Select a predefined task --</option>
+                            <option value="network_analysis">🌐 Network Analysis</option>
+                            <option value="feedback_analysis">💬 Customer Feedback</option>
+                            <option value="risk_assessment">⚠️ Risk Assessment</option>
+                            <option value="data_aggregation">📊 Data Aggregation</option>
+                            <option value="performance_optimization">⚡ Performance Optimization</option>
+                            <option value="anomaly_detection">🚨 Anomaly Detection</option>
+                            <option value="predictive_analysis">🔮 Predictive Analysis</option>
+                            <option value="custom">✏️ Custom Task</option>
+                            <option value="correlation">📊 Correlation Analysis</option>
+                            <option value="prediction">🔮 Time-Series Prediction</option>
+                        </select>
+                    </div>
+
+                    <!-- Correlation Analysis Section -->
+                    <div class="section" id="correlationSection" style="display: none;">
+                        <h3>📊 Correlation Analysis</h3>
+                        <p class="hint">Find which features correlate with your target variable</p>
+                    
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                                Target Column (Predict what?):
+                            </label>
+                            <select id="targetColumn" 
+                                    style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem; cursor: pointer;">
+                                <option value="">-- Select target column --</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">
+                            Source Columns (What influences target?):
+                            </label>
+                            <div id="sourceColumnsContainer" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; background: rgba(51, 65, 85, 0.3);">
+                            <!-- Checkboxes will be added here dynamically -->
+                            </div>
+                            <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">
+                            Select at least 2 columns
+                            </small>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="runCorrelationAnalysis()" style="margin-bottom: 1rem;">
+                        🔍 Analyze Correlations
+                        </button>
+                    </div>
+
+                    <!-- Prediction Section -->
+                    <div class="section" id="predictionSection" style="display: none;">
+                        <h3>🔮 Time-Series Prediction</h3>
+                        <p class="hint">Predict future values based on historical trends</p>
+                        <p style="text-align: center; color: var(--text-secondary);">Coming in Phase 6C...</p>
+                    </div>
+
+
+                    <div class="task-options" id="taskOptions">
+                        <label class="radio-option">
+                            <input type="radio" name="taskType" value="network_analysis" checked>
+                            <span>🌐 Network Analysis</span>
+                            <small>Analyze network performance metrics</small>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="taskType" value="feedback_analysis">
+                            <span>💬 Customer Feedback</span>
+                            <small>Categorize and analyze feedback</small>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="taskType" value="risk_assessment">
+                            <span>⚠️ Risk Assessment</span>
+                            <small>Identify and assess risks</small>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="taskType" value="data_aggregation">
+                            <span>📊 Data Aggregation</span>
+                            <small>Combine and aggregate data from multiple sources</small>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="taskType" value="performance_optimization">
+                            <span>⚡ Performance Optimization</span>
+                            <small>Find optimization opportunities in your data</small>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="taskType" value="anomaly_detection">
+                            <span>🚨 Anomaly Detection</span>
+                            <small>Identify unusual patterns and outliers</small>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="taskType" value="predictive_analysis">
+                            <span>🔮 Predictive Analysis</span>
+                            <small>Predict future trends based on historical data</small>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="taskType" value="custom">
+                            <span>✏️ Custom Task</span>
+                            <small>Define your own analysis task</small>
+                        </label>
+                    </div>
+
+                    <!-- Custom Task Input -->
+                    <div id="customTaskDiv" style="display: none; margin-top: 1rem;">
+                        <input type="text" id="customTaskInput" placeholder="Describe your custom analysis task..." 
+                               style="width: 100%; padding: 0.75rem; background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.9rem;">
+                        <small style="color: var(--text-secondary); display: block; margin-top: 0.5rem;">
+                            Example: "Analyze customer churn patterns and predict who might leave"
+                        </small>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="section action-buttons">
+                    <button id="analyzeBtn" class="btn btn-primary" onclick="startAnalysis()" disabled>
+                        ▶️ Start Analysis
+                    </button>
+                    <button id="clearBtn" class="btn btn-secondary" onclick="clearAll()">
+                        🔄 Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Results & Status -->
+            <div class="panel right-panel">
+                <div class="panel-header">
+                    <h2>📊 Analysis Results</h2>
+                </div>
+
+                <!-- Status Section -->
+                <div id="statusSection" class="section" style="display: none;">
+                    <h3>Processing Status</h3>
+                    <div class="status-box">
+                        <div class="spinner"></div>
+                        <p id="statusMessage">Processing your data...</p>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="section" style="display: none;">
+                    <h3>✅ Analysis Complete</h3>
+                    
+                    <div class="results-card">
+                        <h4>Summary</h4>
+                        <div id="resultsSummary" class="result-content"></div>
+                    </div>
+
+                    <div class="results-card">
+                        <h4>Key Findings</h4>
+                        <div id="resultsFindings" class="result-content"></div>
+                    </div>
+
+                    <div class="results-card">
+                        <h4>Risks Identified</h4>
+                        <div id="resultsRisks" class="result-content"></div>
+                    </div>
+
+                    <div class="results-card">
+                        <h4>Recommendations</h4>
+                        <div id="resultsRecommendations" class="result-content"></div>
+                    </div>
+
+                    <!-- Download Options -->
+                    <div class="download-section">
+                        <h4>Download Results</h4>
+                        <div class="download-buttons">
+                            <button class="btn btn-download" onclick="downloadResults('json')">
+                                📄 JSON
+                            </button>
+                            <button class="btn btn-download" onclick="downloadResults('excel')">
+                                📊 Excel
+                            </button>
+                            <button class="btn btn-download" onclick="downloadResults('csv')">
+                                📋 CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="section empty-state">
+                    <div class="empty-icon">📭</div>
+                    <p>No results yet. Upload a file and start analysis!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>AI Multi-Agent System | Intelligent Data Analysis Platform</p>
+            <p>Running locally on http://localhost:8000</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
